@@ -1,0 +1,304 @@
+<title>決審串場簡報</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden;
+    background: #F5F4F8;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Helvetica Neue", sans-serif;
+  }
+  .deck { position: relative; width: 100vw; height: 100vh; }
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 6vh 8vw;
+    color: #33307A;
+    overflow: hidden;
+  }
+  .slide.active { display: flex; }
+
+  /* soft pastel blob backdrops, poster-inspired */
+  .blob { position: absolute; border-radius: 50%; filter: blur(50px); opacity: .55; pointer-events: none; }
+  .blob.pink { background: radial-gradient(circle, #F6B9D6, transparent 70%); }
+  .blob.mint { background: radial-gradient(circle, #8EE3C8, transparent 70%); }
+  .blob.lav  { background: radial-gradient(circle, #C3BCF0, transparent 70%); }
+  .blob.sky  { background: radial-gradient(circle, #AFD0F2, transparent 70%); }
+
+  .eyebrow {
+    font-size: clamp(13px, 1.4vw, 19px);
+    font-weight: 800;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: #8B7FC7;
+    margin-bottom: clamp(12px, 2vh, 22px);
+    position: relative; z-index: 2;
+  }
+  h1.title {
+    font-size: clamp(52px, 11vw, 156px);
+    font-weight: 900;
+    letter-spacing: -.01em;
+    line-height: 1.05;
+    margin: 0;
+    text-wrap: balance;
+    color: #2E2A73;
+    text-shadow:
+      0 0 0 #fff,
+      3px 3px 0 #fff, -3px 3px 0 #fff, 3px -3px 0 #fff, -3px -3px 0 #fff,
+      0 5px 22px rgba(46,42,115,.14);
+    position: relative; z-index: 2;
+  }
+  .subtitle {
+    font-size: clamp(20px, 3.2vw, 46px);
+    font-weight: 800;
+    margin-top: clamp(14px, 2.6vh, 28px);
+    color: #4A4796;
+    position: relative; z-index: 2;
+  }
+  .tag {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: clamp(15px, 1.9vw, 25px);
+    font-weight: 800;
+    margin-top: clamp(20px, 3.5vh, 40px);
+    padding: 12px 30px;
+    border-radius: 999px;
+    color: #fff;
+    background: linear-gradient(100deg, #57C9AE, #EC9CC2);
+    box-shadow: 0 8px 24px rgba(87,201,174,.28);
+    position: relative; z-index: 2;
+  }
+  .fine {
+    font-size: clamp(13px, 1.4vw, 18px);
+    color: #6F68A8;
+    margin-top: clamp(16px, 2.8vh, 28px);
+    font-weight: 700;
+    position: relative; z-index: 2;
+  }
+  .brandmark {
+    position: absolute; bottom: 22px; left: 28px;
+    font-size: 15px; font-weight: 700; color: #7A72B0; opacity: .7;
+    font-style: italic; letter-spacing: .01em; z-index: 2;
+  }
+
+  /* progress + nav chrome */
+  .chrome { position: fixed; inset: 0; pointer-events: none; z-index: 20; }
+  .progress { position: absolute; bottom: 0; left: 0; height: 4px; background: linear-gradient(90deg, #57C9AE, #EC9CC2); transition: width .25s ease; }
+  .counter {
+    position: absolute; bottom: 18px; right: 26px;
+    font-size: 14px; font-weight: 700; letter-spacing: .05em;
+    color: #9089C4; font-variant-numeric: tabular-nums;
+  }
+  .navzone { position: absolute; top: 0; bottom: 0; width: 14%; pointer-events: auto; cursor: pointer; }
+  .navzone.left { left: 0; } .navzone.right { right: 0; }
+  .navbtn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(74,71,150,.08); border: 1px solid rgba(74,71,150,.16);
+    color: rgba(74,71,150,.55); font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .2s ease; pointer-events: none;
+  }
+  .navzone:hover .navbtn { opacity: 1; }
+  .navbtn.left { left: 18px; } .navbtn.right { right: 18px; }
+  .hint {
+    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    font-size: 12.5px; color: #9089C4; font-weight: 700;
+    letter-spacing: .03em; opacity: 1; transition: opacity .6s ease 2.4s;
+  }
+  .hint.hide { opacity: 0; }
+
+  .accent-mint { color: #2FA98C; }
+  .accent-pink { color: #D9558E; }
+  .accent-blue { color: #5568C9; }
+  .accent-lav  { color: #8A6FD6; }
+
+  /* criteria slide specific */
+  .crit-grid { display: grid; grid-template-columns: max-content max-content; align-items: center; column-gap: clamp(16px,2.2vw,30px); row-gap: clamp(14px,2vh,22px); width: fit-content; margin: 4vh auto 0; position: relative; z-index: 2; }
+  .crit-row { display: contents; }
+  .crit-row .pct { grid-column: 1; font-size: clamp(32px,4.2vw,58px); font-weight: 900; text-align: right; font-variant-numeric: tabular-nums; line-height: 1; }
+  .crit-row .crit-info { grid-column: 2; text-align: left; }
+  .crit-row .label { font-size: clamp(18px,2.4vw,32px); font-weight: 800; color: #2E2A73; }
+  .crit-row .desc { font-size: clamp(12px,1.5vw,18px); color: #6F68A8; font-weight: 600; margin-top: 4px; }
+
+  /* funnel slide specific */
+  .funnel-row { display: flex; align-items: center; gap: clamp(16px,2.4vw,32px); width: min(80vw, 980px); margin: clamp(6px,1.2vh,12px) 0; position: relative; z-index: 2; }
+  .funnel-row .n { font-size: clamp(30px,4vw,52px); font-weight: 900; width: clamp(70px,7vw,110px); text-align: right; font-variant-numeric: tabular-nums; color: #2E2A73; }
+  .funnel-row .bar { flex: 1; height: clamp(40px,6vh,64px); border-radius: 12px; display: flex; align-items: center; padding: 0 22px; font-size: clamp(14px,1.7vw,22px); font-weight: 800; text-align: left; color: #2E2A73; }
+  .funnel-row .arrow { opacity: .35; font-size: clamp(20px,2.4vw,30px); color: #4A4796; }
+
+  @media (max-width: 700px) {
+    .navzone { width: 20%; }
+  }
+</style>
+
+<div class="deck">
+
+  <div id="s-cover" class="slide active">
+    <div class="blob lav" style="width:44vw;height:44vw;top:-16vw;left:-12vw;"></div>
+    <div class="blob mint" style="width:36vw;height:36vw;bottom:-14vw;right:-10vw;"></div>
+    <div class="blob pink" style="width:26vw;height:26vw;top:8vh;right:6vw;"></div>
+    <div class="eyebrow">Straight A · 2026 校園包裝設計大賽 · Wrap It Up!</div>
+    <h1 class="title">決審</h1>
+    <div class="subtitle">2026.07.22（三）14:00</div>
+    <div class="tag">🇹🇼 台灣現場 ・ 🇭🇰 香港視訊 同步進行</div>
+  </div>
+
+  <div id="s-criteria" class="slide">
+    <div class="blob sky" style="width:30vw;height:30vw;top:-10vw;right:-8vw;"></div>
+    <div class="blob lav" style="width:26vw;height:26vw;bottom:-10vw;left:-8vw;"></div>
+    <div class="eyebrow">Rating Criteria</div>
+    <h1 class="title" style="font-size:clamp(36px,6vw,72px)">評分標準</h1>
+    <div class="crit-grid">
+      <div class="crit-row"><div class="pct accent-mint">35%</div><div class="crit-info"><div class="label">印刷與商業可行性</div><div class="desc">零售陳列吸引力・刀模結構與加工實務</div></div></div>
+      <div class="crit-row"><div class="pct accent-pink">30%</div><div class="crit-info"><div class="label">品牌感與質感</div><div class="desc">品牌一致性・整體高級感</div></div></div>
+      <div class="crit-row"><div class="pct accent-blue">25%</div><div class="crit-info"><div class="label">創意表現</div><div class="desc">視覺吸睛度・風格獨特性與原創性</div></div></div>
+      <div class="crit-row"><div class="pct accent-lav">10%</div><div class="crit-info"><div class="label">永續概念</div><div class="desc">減塑結構巧思・環保材質應用</div></div></div>
+    </div>
+    <div class="fine">加分項目：極簡設計・模組化概念・系列化延展性・ESG 敘事能力</div>
+  </div>
+
+  <div id="s-greet" class="slide">
+    <div class="blob mint" style="width:34vw;height:34vw;top:-12vw;left:-10vw;"></div>
+    <div class="blob pink" style="width:30vw;height:30vw;bottom:-12vw;right:-8vw;"></div>
+    <div class="eyebrow">Say Hello</div>
+    <h1 class="title" style="font-size:clamp(40px,7vw,88px)">台港評審<br>互相問候</h1>
+    <div class="subtitle accent-mint">推選評審長</div>
+  </div>
+
+  <div id="s-flow" class="slide">
+    <div class="blob lav" style="width:32vw;height:32vw;top:-10vw;right:-10vw;"></div>
+    <div class="blob sky" style="width:24vw;height:24vw;bottom:-8vw;left:-6vw;"></div>
+    <div class="eyebrow">How We Judge</div>
+    <h1 class="title" style="font-size:clamp(32px,5vw,60px); margin-bottom: 2vh;">今天怎麼評審</h1>
+    <div class="funnel-row">
+      <div class="n">41</div>
+      <div class="bar" style="background:rgba(74,71,150,.08)">初審通過作品</div>
+    </div>
+    <div class="funnel-row"><div class="arrow">↓</div></div>
+    <div class="funnel-row">
+      <div class="n accent-mint">22</div>
+      <div class="bar" style="background:rgba(47,169,140,.14)">Round 1・🟨 黃色便利貼</div>
+    </div>
+    <div class="funnel-row"><div class="arrow">↓</div></div>
+    <div class="funnel-row">
+      <div class="n accent-pink">7</div>
+      <div class="bar" style="background:linear-gradient(90deg, rgba(217,85,142,.16), rgba(85,104,201,.16))">Round 2・🔴 最佳設計 5 ／ 🔵 新銳潛力 2</div>
+    </div>
+    <div class="funnel-row"><div class="arrow">↓</div></div>
+    <div class="funnel-row">
+      <div class="n accent-lav">1</div>
+      <div class="bar" style="background:rgba(138,111,214,.16)">🏆 全場大獎・5 選 1</div>
+    </div>
+  </div>
+
+  <div id="s-round1" class="slide">
+    <div class="blob mint" style="width:40vw;height:40vw;top:-14vw;left:-12vw;"></div>
+    <div class="blob pink" style="width:22vw;height:22vw;bottom:-8vw;right:4vw;"></div>
+    <div class="eyebrow">評選第一階段</div>
+    <h1 class="title accent-mint">ROUND 1</h1>
+    <div class="subtitle">41 → 22 入圍</div>
+    <div class="tag">🟨 黃色便利貼・每人 22 張</div>
+  </div>
+
+  <div id="s-tally1" class="slide">
+    <div class="blob lav" style="width:28vw;height:28vw;top:-10vw;right:-6vw;"></div>
+    <div class="blob sky" style="width:24vw;height:24vw;bottom:-8vw;left:-6vw;"></div>
+    <div class="eyebrow">Please Wait</div>
+    <h1 class="title" style="font-size:clamp(40px,7vw,88px)">計票中</h1>
+    <div class="subtitle" style="color:#8B7FC7">休息一下，請稍候</div>
+    <div class="tag">⏱ 約 15 分鐘</div>
+    <div class="fine">入圍 22 件名單確認中</div>
+  </div>
+
+  <div id="s-round2" class="slide">
+    <div class="blob pink" style="width:34vw;height:34vw;top:-12vw;right:-10vw;"></div>
+    <div class="blob blue-soft accent-blue" style="width:30vw;height:30vw;bottom:-12vw;left:-10vw;background:radial-gradient(circle,#AFD0F2,transparent 70%);position:absolute;border-radius:50%;filter:blur(50px);opacity:.55;"></div>
+    <div class="eyebrow">評選第二階段</div>
+    <h1 class="title accent-pink">ROUND 2</h1>
+    <div class="subtitle">22 → 7 得獎</div>
+    <div class="tag"><span>🔴 最佳設計 5 張</span>　<span>🔵 新銳潛力 2 張</span></div>
+  </div>
+
+  <div id="s-tally2" class="slide">
+    <div class="blob lav" style="width:28vw;height:28vw;top:-10vw;left:-6vw;"></div>
+    <div class="blob mint" style="width:22vw;height:22vw;bottom:-8vw;right:-4vw;"></div>
+    <div class="eyebrow">Please Wait</div>
+    <h1 class="title" style="font-size:clamp(40px,7vw,88px)">計票中</h1>
+    <div class="subtitle" style="color:#8B7FC7">休息一下，請稍候</div>
+    <div class="tag">⏱ 約 15 分鐘</div>
+    <div class="fine">最終得獎名單確認中</div>
+  </div>
+
+  <div id="s-final" class="slide">
+    <div class="blob lav" style="width:38vw;height:38vw;top:-14vw;left:50%;transform:translateX(-50%);"></div>
+    <div class="blob pink" style="width:26vw;height:26vw;bottom:-10vw;right:-6vw;"></div>
+    <div class="eyebrow">The Last Vote</div>
+    <h1 class="title accent-lav">🏆 全場大獎</h1>
+    <div class="subtitle">最終投票・5 選 1</div>
+  </div>
+
+  <div id="s-results" class="slide">
+    <div class="blob mint" style="width:30vw;height:30vw;top:-10vw;left:-8vw;"></div>
+    <div class="blob pink" style="width:30vw;height:30vw;top:-10vw;right:-8vw;"></div>
+    <div class="blob lav" style="width:26vw;height:26vw;bottom:-12vw;left:50%;transform:translateX(-50%);"></div>
+    <div class="eyebrow">And The Winner Is</div>
+    <h1 class="title" style="font-size:clamp(38px,6.4vw,80px)">得獎名單<br>公布</h1>
+  </div>
+
+  <div id="s-end" class="slide">
+    <div class="blob lav" style="width:40vw;height:40vw;top:-14vw;right:-12vw;"></div>
+    <div class="blob mint" style="width:30vw;height:30vw;bottom:-12vw;left:-10vw;"></div>
+    <div class="eyebrow">Thank You</div>
+    <h1 class="title" style="font-size:clamp(36px,6vw,72px)">感謝各位評審</h1>
+    <div class="subtitle" style="color:#8B7FC7">Wrap It Up! 2026 決審 圓滿結束</div>
+    <div class="fine">正式頒獎典禮・2026 年 8 月 14 日</div>
+    <div class="brandmark">Straight A</div>
+  </div>
+
+</div>
+
+<div class="chrome">
+  <div class="progress" id="progress"></div>
+  <div class="counter" id="counter"></div>
+  <div class="hint" id="hint">← → 或點兩側切換　・　數字鍵 0–9 跳頁</div>
+  <div class="navzone left" id="zoneLeft"><div class="navbtn left">‹</div></div>
+  <div class="navzone right" id="zoneRight"><div class="navbtn right">›</div></div>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll(".slide"));
+  let i = 0;
+  const counter = document.getElementById("counter");
+  const progress = document.getElementById("progress");
+  const hint = document.getElementById("hint");
+
+  function render() {
+    slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+    counter.textContent = (i + 1) + " / " + slides.length;
+    progress.style.width = ((i + 1) / slides.length * 100) + "%";
+  }
+  function go(delta) {
+    i = Math.max(0, Math.min(slides.length - 1, i + delta));
+    render();
+  }
+  function jump(n) {
+    if (n >= 0 && n < slides.length) { i = n; render(); }
+  }
+
+  document.getElementById("zoneLeft").addEventListener("click", () => go(-1));
+  document.getElementById("zoneRight").addEventListener("click", () => go(1));
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " ") go(1);
+    else if (e.key === "ArrowLeft") go(-1);
+    else if (e.key === "f" || e.key === "F") {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    } else if (/^[0-9]$/.test(e.key)) jump(parseInt(e.key, 10));
+  });
+
+  setTimeout(() => hint.classList.add("hide"), 2400);
+  render();
+</script>
